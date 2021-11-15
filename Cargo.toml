@@ -1,0 +1,27 @@
+[package]
+name = "gps-watch"
+version = "0.1.0"
+edition = "2021"
+authors = ["Gary B <me@gary600.xyz>"]
+
+
+[dependencies]
+cortex-m = "0.7.3" # Core library for Cortex-M
+cortex-m-rt = "0.6.8" # Runtime and entry point
+cortex-m-semihosting = "0.3.7" # For run-time logging to the host PC
+embedded-hal = "0.2.6" # for genericized HAL APIs (old version for compat with stm32l0xx-hal)
+panic-semihosting = "0.5.6" # For sending panic info to the host PC
+log = "0.4.14" # For logging macros
+embedded-graphics = "0.7.1" # For drawing primitives
+
+[dependencies.stm32l0xx-hal] # Processor-specific library for STM32L0
+version = "0.8.0"
+features = [ "mcu-STM32L051K6Tx" ]
+
+
+# Always optimize for size
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+opt-level = "s"
