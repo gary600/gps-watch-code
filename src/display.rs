@@ -20,6 +20,7 @@ const COMMAND_CLEAR: u8 = 0b00100000;
 const COMMAND_TOGGLE_VCOM: u8 = 0b00000000;
 
 /// An implementation of [`DrawTarget`](embedded_graphics::draw_target::DrawTarget) for the Sharp Memory LCD
+#[derive(Debug)]
 pub struct SharpLcd<SPI, CS> {
     spi: SPI,
     cs: CS,
@@ -27,6 +28,8 @@ pub struct SharpLcd<SPI, CS> {
     /// Contains an array for every row, and a `u8` for every 8 pixels in that row
     /// Byte order: leftmost pixels are in the LSB (this is how the LCD expects it)
     framebuffer: [[u8; WIDTH/8]; HEIGHT],
+    /// Keeps track of which lines have been updated. LSB means lower y-value
+    updated_lines: [u8; HEIGHT/8],
     vcom: bool
 }
 
@@ -37,26 +40,112 @@ impl<SPI: FullDuplex<u8>, CS: OutputPin> SharpLcd<SPI, CS> {
             spi,
             cs,
             framebuffer: [[0; WIDTH/8]; HEIGHT],
+            updated_lines: [0; HEIGHT/8],
             vcom: false
         }
     }
 
-    /// Clear the screen fully white. [`SharpLcd::flush()`] should be called afterwards.
-    //todo? Maybe make this send the clear command as well so we don't manually write it all white
+    /// Clear the screen fully white. Needs to be flushed afterward.
     pub fn clear(&mut self) {
+        // Clear framebuffer
         self.framebuffer = [[0; WIDTH/8]; HEIGHT];
+        // All lines have been updated
+        self.updated_lines = [0xFF; HEIGHT/8];
+    }
+
+    /// Clear the screen fully white by sending a command to the screen.
+    pub fn send_clear(&mut self) -> nb::Result<(), SPI::Error> {
+        self.framebuffer = [[0; WIDTH/8]; HEIGHT];
+
+        // Header
+        self.spi.send(self.format_command(COMMAND_CLEAR))?;
+        // Trailer
+        self.spi.send(0x00);
+
+        // Lines have been flushed
+        self.updated_lines = [0x00; HEIGHT/8];
+
+        Ok(())
     }
 
     /// Flush changes to the screen
-    pub fn flush(&mut self) {
-        todo!()
-        // Might want to optimize with DMA, that'd require more params
-    }
+    pub fn flush(&mut self) -> nb::Result<(), SPI::Error> {
+        //TODO: Might want to optimize with DMA, that'd require more params
 
+        // If no lines have been updated since last flush, then just write Toggle VCOM message
+        if self.updated_lines == [0x00; HEIGHT/8] {
+            // Header
+            self.spi.send(self.format_command(COMMAND_TOGGLE_VCOM))?;
+            // Trailer
+            self.spi.send(0x00)?;
+        }
+
+        // If framebuffer has been updated, only send changed lines
+        else {
+            // Header
+            self.spi.send(self.format_command(COMMAND_WRITE_LINES))?;
+
+            // Line data
+            for (n, line) in self.framebuffer.iter().enumerate() {
+                // Only send line if changed
+                if self.updated_lines[n / 8] & (1u8 << (n % 8)) != 0 {
+                    // Line number
+                    self.spi.send(n as u8)?;
+                    // Line data
+                    for &byte in line {
+                        self.spi.send(byte)?;
+                    }
+                    // Line trailer
+                    self.spi.send(0x00)?;
+                }
+            }
+
+            // Trailer
+            self.spi.send(0x00)?;
+
+            // Clear changed lines
+            self.updated_lines = [0x00; HEIGHT / 8];
+        }
+
+        Ok(())
+    }
+}
+
+impl<SPI, CS> SharpLcd<SPI, CS> {
     /// Toggle the VCOM value. This should be done at least once per second to prevent burn-in.
     /// [`SharpLcd::flush()`] should be called afterwards.
     pub fn toggle_vcom(&mut self) {
         self.vcom = !self.vcom;
+    }
+
+    /// Write a single pixel.
+    #[inline(always)]
+    fn write_pixel(&mut self, pixel: Pixel<BinaryColor>) {
+        // Ignore it if it's outside of the screen bounds
+        if !self.bounding_box().contains(pixel.0) {
+            return;
+        }
+
+        // Write to framebuffer. Shouldn't panic because bounds have been checked
+        if pixel.1.is_on() {
+            // Or'd with bit to set it
+            self.framebuffer[pixel.0.y as usize][(pixel.0.x / 8) as usize]
+                |= 1u8 << (pixel.0.x % 8);
+        }
+        else {
+            // And'd with inverse of byte to unset it
+            self.framebuffer[pixel.0.y as usize][(pixel.0.x / 8) as usize]
+                &= !(1u8 << (pixel.0.x % 8));
+        }
+
+        // Mark line as updated
+        self.updated_lines[(pixel.0.y / 8) as usize] |= 1u8 << (pixel.0.y % 8);
+    }
+
+    /// Format a display command with the V-bit set to the VCOM state
+    #[inline(always)]
+    fn format_command(&self, command: u8) -> u8 {
+        command | ((self.vcom as u8) << 6)
     }
 }
 
@@ -71,15 +160,9 @@ impl<SPI, CS> DrawTarget for SharpLcd<SPI, CS> {
     type Error = core::convert::Infallible;
 
     fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error> where I: IntoIterator<Item=Pixel<Self::Color>> {
+        // Draw each pixel
         for pixel in pixels {
-            // Check if on screen
-            if self.bounding_box().contains(pixel.0) {
-                // Convert to inverted u8
-                let color_inv = pixel.1.is_off() as u8;
-                // Write to framebuffer. Shouldn't panic because bounds have been checked
-                self.framebuffer[pixel.0.y as usize][(pixel.0.x/8) as usize]
-                    &= !(color_inv << (pixel.0.x % 8));
-            }
+            self.write_pixel(pixel);
         }
 
         Ok(())

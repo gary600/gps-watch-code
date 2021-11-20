@@ -7,8 +7,9 @@ use panic_semihosting as _;
 #[cortex_m_rt::entry]
 fn boot() -> ! {
     // Initialize logging
-    // Must use `set_logger_racy` as normal `set_logger` doesn't work on thumbv6
-    // Since this is the only logger initialization ever, this is safe.
+    // Must use `set_logger_racy` as normal `set_logger` doesn't work on thumbv6.
+    // Since this is the only logger initialization ever, and this function runs before anything
+    // else does, this is safe.
     // Fail silently
     let _ = unsafe { log::set_logger_racy(&crate::LOGGER) };
     log::trace!("logging initialized");
@@ -16,6 +17,7 @@ fn boot() -> ! {
     // Call the real main()
     let e = crate::main();
 
+    // main() shouldn't ever return, so panic with the error if it does
     panic!("main() returned: {:?}", e);
 }
 

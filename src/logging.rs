@@ -2,7 +2,7 @@
 
 use core::fmt::Write;
 use log::{Log, Record, Level, Metadata};
-use cortex_m_semihosting::hio::hstderr;
+use cortex_m_semihosting::hio::hstdout;
 
 /// An implementation of [`log::Log`] for printing to the host PC
 pub struct SemihostingLogger {
@@ -17,27 +17,27 @@ impl Log for SemihostingLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let mut fd = match hstderr() {
+            let mut fd = match hstdout() {
                 Ok(fd) => fd,
-                Err(()) => return // Fail silently if unable to get hstderr
+                Err(()) => return // Fail silently if unable to get hstdout
             };
 
-            // Write line header
-            write!(
+            // Write line header, fail silently
+            let _ = write!(
                 fd,
                 "[{level} {target}] {file}:{line}: ",
                 level=record.level(),
                 target=record.target(),
                 file=record.file().unwrap_or("<unknown>"),
                 line=record.line().unwrap_or(0)
-            ).unwrap();
+            );
 
-            // Write the formatted output
-            fd.write_fmt(*record.args()).unwrap();
+            // Write the formatted output, fail silently
+            let _ = fd.write_fmt(*record.args());
         }
     }
 
-    fn flush(&self) { } // Do nothing: semihosting macros are unbuffered
+    fn flush(&self) { } // Do nothing: semihosting ops are unbuffered
 }
 
 impl SemihostingLogger {
