@@ -34,8 +34,7 @@ pub struct Resources {
             )
         >,
         hal::gpio::gpioa::PA4<hal::gpio::Output<hal::gpio::PushPull>>
-    >,
-    pub buzzer: crate::peripherals::alert::Buzzer<hal::pac::TIM2>
+    >
 }
 impl core::fmt::Debug for Resources {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
