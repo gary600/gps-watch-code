@@ -8,7 +8,8 @@ authors = ["Gary B <me@gary600.xyz>"]
 [dependencies]
 cortex-m = "0.7.3" # Core library for Cortex-M
 cortex-m-rt = "0.6.8" # Runtime and entry point
-stm32l0xx-hal = { version = "0.8.0", features = [ "mcu-STM32L051K6Tx" ] } # Processor-specific library for STM32L0
+stm32l0xx-hal = { version = "0.8.0", features = [ "mcu-STM32L071KZTx" ] } # Processor-specific library for STM32L0
+cortex-m-rtic = "0.6.0-rc.4" # Embedded realtime framework
 nb = "1.0.0" # For non-blocking IO
 chrono = { version = "0.4.19", default_features = false } # For time utilites
 cortex-m-semihosting = "0.3.7" # For run-time logging to the host PC
@@ -17,7 +18,7 @@ embedded-sdmmc = "0.3.0" # for SD card and FAT filesystem access
 panic-semihosting = "0.5.6" # For sending panic info to the host PC
 log = "0.4.14" # For logging macros
 embedded-graphics = "0.7.1" # For drawing primitives
-arrayvec = { version = "0.7.2", default_features = false } # For fixed-size dynamic strings and vecs
+arrayvec = { version = "0.7.2", default_features = false } # For fixed-capacity dynamic-size strings and vecs
 
 
 # Always optimize for size

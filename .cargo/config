@@ -1,2 +1,7 @@
+[target.thumbv6m-none-eabi]
+rustflags = [
+    "-C", "link-arg=-Tlink.x" # Needed otherwise it outputs an empty binary for some reason...
+]
+
 [build]
 target = "thumbv6m-none-eabi"
