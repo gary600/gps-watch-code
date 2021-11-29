@@ -44,7 +44,9 @@ impl<SPI, CS> core::fmt::Debug for SharpLcd<SPI, CS> {
 
 impl<SPI: FullDuplex<u8>, CS: OutputPin> SharpLcd<SPI, CS> {
     /// Create a new display
-    pub fn new(spi: SPI, cs: CS) -> Self {
+    pub fn new(spi: SPI, mut cs: CS) -> Self {
+        let _ = cs.set_low();
+
         Self {
             spi,
             cs,

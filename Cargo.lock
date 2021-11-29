@@ -252,6 +252,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fugit"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e4508138d453a72fc32ff5b12f69ddcf14bac0b020445305ba623755deb9dbd"
+
+[[package]]
 name = "gps-watch"
 version = "0.1.0"
 dependencies = [
@@ -266,8 +272,10 @@ dependencies = [
  "embedded-sdmmc",
  "log",
  "nb 1.0.0",
+ "nmea0183",
  "panic-semihosting",
  "stm32l0xx-hal",
+ "systick-monotonic",
 ]
 
 [[package]]
@@ -357,6 +365,12 @@ name = "nb"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "546c37ac5d9e56f55e73b677106873d9d9f5190605e41a856503623648488cae"
+
+[[package]]
+name = "nmea0183"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be7c39b576a4bdcfa8cdf86556d41e6ae00a6e6d093c427bdd184e4f3b4be7e3"
 
 [[package]]
 name = "num"
@@ -618,6 +632,7 @@ checksum = "ed7ffdb929148070435dbc4dc69fd62b3a031c0543b4a9d2ec9fc8b31a0f3344"
 dependencies = [
  "bare-metal 0.2.5",
  "cortex-m",
+ "cortex-m-rt",
  "vcell",
 ]
 
@@ -649,6 +664,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "systick-monotonic"
+version = "0.1.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39ce021e54b01d56ef72384169f815845446364826fa4f85629e14177278ace4"
+dependencies = [
+ "cortex-m",
+ "fugit",
+ "rtic-monotonic",
 ]
 
 [[package]]
